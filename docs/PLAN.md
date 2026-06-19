@@ -113,8 +113,8 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - [x] Propose SQLite schema for MVP kanban persistence (JSON-focused approach to be finalized).
 - [x] Document data model, migrations/bootstrap, and tradeoffs in `docs/`.
 - [x] Define clear ownership boundaries between API contracts and storage schema.
-- [ ] Request user sign-off before implementation.
-- [ ] Pause for user approval.
+- [x] Request user sign-off before implementation.
+- [x] Pause for user approval.
 
 ### Tests
 
@@ -123,31 +123,31 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 ### Success Criteria
 
-- [ ] User signs off on schema and persistence approach.
-- [ ] Schema supports one board per user now, extensible for multi-user future.
+- [x] User signs off on schema and persistence approach.
+- [x] Schema supports one board per user now, extensible for multi-user future.
 
 ## Phase 6: Backend Kanban APIs + Persistence
 
 ### Checklist
 
-- [ ] Implement backend repository/service layer for board read/write.
-- [ ] Add API endpoints for fetch/update board state.
-- [ ] Enforce authenticated user scoping.
-- [ ] Auto-create SQLite database if missing.
-- [ ] Add input/output validation and error handling.
+- [x] Implement backend repository/service layer for board read/write.
+- [x] Add API endpoints for fetch/update board state.
+- [x] Enforce authenticated user scoping.
+- [x] Auto-create SQLite database if missing.
+- [x] Add input/output validation and error handling.
 - [ ] Pause for user approval.
 
 ### Tests
 
-- [ ] Unit tests for service/repository logic.
-- [ ] Integration tests for API contracts and persistence behavior.
-- [ ] Integration tests for auth enforcement on board APIs.
+- [x] Unit tests for service/repository logic.
+- [x] Integration tests for API contracts and persistence behavior.
+- [x] Integration tests for auth enforcement on board APIs.
 
 ### Success Criteria
 
-- [ ] Board changes persist across restarts.
-- [ ] Unauthorized access is rejected.
-- [ ] Database auto-initializes when missing.
+- [x] Board changes persist across restarts.
+- [x] Unauthorized access is rejected.
+- [x] Database auto-initializes when missing.
 
 ## Phase 7: Frontend + Backend Integration
 
