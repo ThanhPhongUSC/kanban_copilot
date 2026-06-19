@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 DEFAULT_DB_PATH = BASE_DIR / "data" / "pm.db"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "openai/gpt-oss-120b"
 SESSION_COOKIE_NAME = "pm_session"
 DEMO_USERNAME = "user"
 DEMO_PASSWORD = "password"
@@ -53,6 +56,13 @@ class BoardResponse(BaseModel):
     status: str
     board: BoardData
     version: int
+
+
+class AISmokeResponse(BaseModel):
+    status: str
+    model: str
+    prompt: str
+    answer: str
 
 
 DEFAULT_BOARD: dict[str, Any] = {
@@ -249,6 +259,51 @@ def get_current_username(pm_session: str | None = Cookie(default=None)) -> str:
     return pm_session
 
 
+def call_openrouter_smoke(prompt: str) -> str:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AI is not configured")
+
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer the user prompt concisely.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0,
+    }
+
+    try:
+        response = httpx.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=30.0,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="AI provider is unavailable") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="AI provider returned an error")
+
+    data = response.json()
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise HTTPException(status_code=502, detail="AI provider response was invalid")
+
+    message = choices[0].get("message", {})
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(status_code=502, detail="AI provider response was invalid")
+    return content.strip()
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "pm-mvp-backend"}
@@ -304,6 +359,18 @@ def get_board(username: str = Depends(get_current_username)) -> BoardResponse:
 def update_board(board: BoardData, username: str = Depends(get_current_username)) -> BoardResponse:
     saved_payload, version = save_board_for_user(username, board)
     return BoardResponse(status="ok", board=BoardData.model_validate(saved_payload), version=version)
+
+
+@app.get("/api/ai/smoke", response_model=AISmokeResponse)
+def ai_smoke(_: str = Depends(get_current_username)) -> AISmokeResponse:
+    prompt = "What is 2+2? Reply with only the final number."
+    answer = call_openrouter_smoke(prompt)
+    return AISmokeResponse(
+        status="ok",
+        model=OPENROUTER_MODEL,
+        prompt=prompt,
+        answer=answer,
+    )
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")

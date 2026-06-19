@@ -2,8 +2,10 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+import httpx
 from fastapi.testclient import TestClient
 
+import main
 from main import app
 
 
@@ -150,3 +152,72 @@ def test_board_access_denied_after_logout() -> None:
         response = client.get("/api/board")
 
     assert response.status_code == 401
+
+
+def test_ai_smoke_requires_authentication() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/ai/smoke")
+
+    assert response.status_code == 401
+
+
+def test_ai_smoke_reports_missing_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    with TestClient(app) as client:
+        login(client)
+        response = client.get("/api/ai/smoke")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "AI is not configured"
+
+
+def test_ai_smoke_returns_model_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "4",
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+    with TestClient(app) as client:
+        login(client)
+        response = client.get("/api/ai/smoke")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["model"] == "openai/gpt-oss-120b"
+    assert payload["answer"] == "4"
+
+
+def test_ai_smoke_handles_provider_network_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    def raise_http_error(*args, **kwargs):
+        raise httpx.ConnectError("network down")
+
+    monkeypatch.setattr(main.httpx, "post", raise_http_error)
+
+    with TestClient(app) as client:
+        login(client)
+        response = client.get("/api/ai/smoke")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "AI provider is unavailable"

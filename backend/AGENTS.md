@@ -18,12 +18,15 @@ The backend directory contains the FastAPI service that will:
 	- `/api/auth/session`
 	- `/api/board` (GET)
 	- `/api/board` (PUT)
+	- `/api/ai/smoke` (GET)
 	- static frontend serving at `/`
 - Auth uses a backend-managed HTTP-only cookie (`pm_session`).
 - MVP credentials are hardcoded to `user` / `password`.
 - SQLite database is auto-created if missing.
 - Users and boards are persisted in SQLite.
 - Board state is stored as JSON plus a version field.
+- AI smoke call uses OpenRouter model `openai/gpt-oss-120b`.
+- AI smoke requires `OPENROUTER_API_KEY` in runtime environment.
 - In Docker runtime, `backend/static` is populated from the exported Next.js build.
 
 ## Working Rules

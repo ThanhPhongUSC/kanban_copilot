@@ -157,7 +157,7 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - [x] Persist card/column edits through API.
 - [x] Add loading, empty, and error states that keep UX simple.
 - [x] Keep drag-and-drop behavior consistent with backend persistence.
-- [ ] Pause for user approval.
+- [x] Pause for user approval.
 
 ### Tests
 
@@ -175,22 +175,22 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 ### Checklist
 
-- [ ] Add backend AI client wrapper using OpenRouter API key from `.env`.
-- [ ] Implement simple diagnostic route or internal check for AI call.
-- [ ] Validate model usage with `openai/gpt-oss-120b`.
-- [ ] Perform smoke prompt test (`2+2`).
+- [x] Add backend AI client wrapper using OpenRouter API key from `.env`.
+- [x] Implement simple diagnostic route or internal check for AI call.
+- [x] Validate model usage with `openai/gpt-oss-120b`.
+- [ ] Perform smoke prompt test (`2+2`). (Blocked: `.env` currently has no `OPENROUTER_API_KEY`)
 - [ ] Pause for user approval.
 
 ### Tests
 
-- [ ] Unit tests with mocked AI client.
-- [ ] Integration test with mocked provider path and error handling.
-- [ ] Optional manual live smoke check in local environment.
+- [x] Unit tests with mocked AI client.
+- [x] Integration test with mocked provider path and error handling.
+- [ ] Optional manual live smoke check in local environment. (Attempted; blocked by missing API key)
 
 ### Success Criteria
 
-- [ ] Backend can make successful OpenRouter request.
-- [ ] Failure cases return clear, safe errors.
+- [ ] Backend can make successful OpenRouter request. (Pending API key in `.env`)
+- [x] Failure cases return clear, safe errors.
 
 ## Phase 9: Structured Output for Kanban-Aware AI
 
