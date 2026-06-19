@@ -23,103 +23,103 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 ### Checklist
 
-- [ ] Expand `docs/PLAN.md` with detailed phase checklists, tests, and success criteria.
-- [ ] Create `frontend/AGENTS.md` documenting current frontend architecture and behavior.
-- [ ] Confirm test strategy and acceptance criteria with the user.
-- [ ] Pause for user approval.
+- [x] Expand `docs/PLAN.md` with detailed phase checklists, tests, and success criteria.
+- [x] Create `frontend/AGENTS.md` documenting current frontend architecture and behavior.
+- [x] Confirm test strategy and acceptance criteria with the user.
+- [x] Pause for user approval.
 
 ### Tests
 
-- [ ] Documentation sanity check: verify referenced paths and commands exist.
+- [x] Documentation sanity check: verify referenced paths and commands exist.
 
 ### Success Criteria
 
-- [ ] Plan is explicit enough to execute without guessing.
-- [ ] User explicitly approves the plan before Phase 2.
+- [x] Plan is explicit enough to execute without guessing.
+- [x] User explicitly approves the plan before Phase 2.
 
 ## Phase 2: Scaffolding (Docker + FastAPI Hello World)
 
 ### Checklist
 
-- [ ] Create backend project scaffold in `backend/` using FastAPI.
-- [ ] Add Dockerfile and any minimal supporting files for a single-container runtime.
-- [ ] Add platform scripts in `scripts/` to start/stop the app on macOS, Linux, and Windows.
-- [ ] Implement a simple `/api/health` endpoint.
-- [ ] Serve simple static HTML at `/` to prove frontend serving path from backend.
-- [ ] Document run commands and expected behavior.
-- [ ] Pause for user approval.
+- [x] Create backend project scaffold in `backend/` using FastAPI.
+- [x] Add Dockerfile and any minimal supporting files for a single-container runtime.
+- [x] Add platform scripts in `scripts/` to start/stop the app on macOS, Linux, and Windows.
+- [x] Implement a simple `/api/health` endpoint.
+- [x] Serve simple static HTML at `/` to prove frontend serving path from backend.
+- [x] Document run commands and expected behavior.
+- [x] Pause for user approval.
 
 ### Tests
 
-- [ ] Backend unit test: health endpoint returns success payload.
-- [ ] Integration test: container starts and serves HTML on `/`.
-- [ ] Integration test: `/api/health` reachable from running container.
+- [x] Backend unit test: health endpoint returns success payload.
+- [x] Integration test: container starts and serves HTML on `/`.
+- [x] Integration test: `/api/health` reachable from running container.
 
 ### Success Criteria
 
-- [ ] One command starts the single container locally.
-- [ ] Browser request to `/` returns hello-world page.
-- [ ] API call to `/api/health` succeeds.
+- [x] One command starts the single container locally.
+- [x] Browser request to `/` returns hello-world page.
+- [x] API call to `/api/health` succeeds.
 
 ## Phase 3: Add Existing Frontend Into Containerized App
 
 ### Checklist
 
-- [ ] Build Next.js frontend as static assets.
-- [ ] Wire backend static serving to deliver built frontend at `/`.
-- [ ] Ensure asset paths and refresh behavior work in local container.
-- [ ] Preserve existing Kanban interactions.
-- [ ] Pause for user approval.
+- [x] Build Next.js frontend as static assets.
+- [x] Wire backend static serving to deliver built frontend at `/`.
+- [x] Ensure asset paths and refresh behavior work in local container.
+- [x] Preserve existing Kanban interactions.
+- [x] Pause for user approval.
 
 ### Tests
 
-- [ ] Frontend unit tests pass in CI-like mode.
-- [ ] Integration test: backend serves compiled frontend HTML and assets.
-- [ ] E2E smoke test: Kanban board renders at `/` with expected columns.
+- [x] Frontend unit tests pass in CI-like mode.
+- [x] Integration test: backend serves compiled frontend HTML and assets.
+- [x] E2E smoke test: Kanban board renders at `/` with expected columns.
 
 ### Success Criteria
 
-- [ ] Existing demo Kanban works through backend-served route.
-- [ ] No local dependency on separate frontend dev server for MVP run path.
+- [x] Existing demo Kanban works through backend-served route.
+- [x] No local dependency on separate frontend dev server for MVP run path.
 
 ## Phase 4: Fake Sign-In With Backend Cookies
 
 ### Checklist
 
-- [ ] Add login UI and route flow.
-- [ ] Add backend login endpoint for hardcoded credentials.
-- [ ] Set secure cookie settings suitable for local MVP (HTTP-only where possible).
-- [ ] Add logout endpoint and UI action.
-- [ ] Protect board route so unauthenticated users are redirected/blocked.
-- [ ] Pause for user approval.
+- [x] Add login UI and route flow.
+- [x] Add backend login endpoint for hardcoded credentials.
+- [x] Set secure cookie settings suitable for local MVP (HTTP-only where possible).
+- [x] Add logout endpoint and UI action.
+- [x] Protect board route so unauthenticated users are redirected/blocked.
+- [x] Pause for user approval.
 
 ### Tests
 
-- [ ] Backend unit tests for login/logout/session validation logic.
-- [ ] Integration tests: successful and failed login flows.
-- [ ] Integration tests: protected endpoint requires session cookie.
-- [ ] E2E: login required before board access; logout returns to login screen.
+- [x] Backend unit tests for login/logout/session validation logic.
+- [x] Integration tests: successful and failed login flows.
+- [x] Integration tests: protected endpoint requires session cookie.
+- [x] E2E: login required before board access; logout returns to login screen.
 
 ### Success Criteria
 
-- [ ] Only `user` / `password` can authenticate.
-- [ ] Session is managed by backend cookie.
-- [ ] Logout clears session and blocks board access.
+- [x] Only `user` / `password` can authenticate.
+- [x] Session is managed by backend cookie.
+- [x] Logout clears session and blocks board access.
 
 ## Phase 5: Database Modeling (Proposal + Approval)
 
 ### Checklist
 
-- [ ] Propose SQLite schema for MVP kanban persistence (JSON-focused approach to be finalized).
-- [ ] Document data model, migrations/bootstrap, and tradeoffs in `docs/`.
-- [ ] Define clear ownership boundaries between API contracts and storage schema.
+- [x] Propose SQLite schema for MVP kanban persistence (JSON-focused approach to be finalized).
+- [x] Document data model, migrations/bootstrap, and tradeoffs in `docs/`.
+- [x] Define clear ownership boundaries between API contracts and storage schema.
 - [ ] Request user sign-off before implementation.
 - [ ] Pause for user approval.
 
 ### Tests
 
-- [ ] Schema validation tests for create/read/update round-trips.
-- [ ] Migration/bootstrap test for empty database creation.
+- [ ] Schema validation tests for create/read/update round-trips. (Planned for Phase 6 implementation)
+- [ ] Migration/bootstrap test for empty database creation. (Planned for Phase 6 implementation)
 
 ### Success Criteria
 
