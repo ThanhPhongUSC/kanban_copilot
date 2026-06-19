@@ -9,18 +9,17 @@ The backend directory contains the FastAPI service that will:
 - Manage auth/session and persistence for the MVP
 - Integrate with OpenRouter for AI features in later phases
 
-## Current Phase 2 Contents
+## Current Phase 4 Status
 
-- `main.py`: FastAPI app with `/` static hello page and `/api/health` endpoint.
-- `static/index.html`: hello-world page that also calls `/api/health`.
-- `tests/test_app.py`: backend tests for health endpoint and root page serving.
-- `pyproject.toml`: backend dependencies and pytest configuration.
-
-## Current Phase 3 Status
-
+- `main.py` includes:
+	- `/api/health`
+	- `/api/auth/login`
+	- `/api/auth/logout`
+	- `/api/auth/session`
+	- static frontend serving at `/`
+- Auth uses a backend-managed HTTP-only cookie (`pm_session`).
+- MVP credentials are hardcoded to `user` / `password`.
 - In Docker runtime, `backend/static` is populated from the exported Next.js build.
-- FastAPI serves the frontend static build at `/` and keeps API routes at `/api/*`.
-- Local backend tests still validate static serving and health endpoint behavior.
 
 ## Working Rules
 

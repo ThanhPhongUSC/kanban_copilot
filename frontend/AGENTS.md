@@ -16,10 +16,15 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 ## Current App Behavior
 
-- Route `/` renders `src/app/page.tsx`, which mounts `KanbanBoard`.
+- Route `/` renders `src/app/page.tsx`, which mounts `AuthGate`.
+- `AuthGate` checks backend session at `/api/auth/session`.
+- Unauthenticated users see a login form.
+- Authenticated users see the Kanban board and a logout action.
 - Board state is currently local/in-memory (no backend persistence yet).
 - The board has five columns by default.
 - Users can:
+  - Sign in with demo credentials (`user` / `password`).
+  - Log out.
   - Rename columns inline.
   - Add a card with title/details.
   - Remove a card.
@@ -29,6 +34,7 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 - `src/app/page.tsx`: Home route entrypoint.
 - `src/components/KanbanBoard.tsx`: Top-level board state and drag/drop orchestration.
+- `src/components/AuthGate.tsx`: Login/session gate and logout behavior.
 - `src/components/KanbanColumn.tsx`: Column rendering, title editing, add-card entrypoint.
 - `src/components/KanbanCard.tsx`: Sortable card UI and delete action.
 - `src/components/NewCardForm.tsx`: Inline add-card form.
@@ -45,9 +51,11 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 - Unit/component tests:
   - `src/lib/kanban.test.ts` verifies `moveCard` logic.
+  - `src/components/AuthGate.test.tsx` verifies auth gate states and login handling.
   - `src/components/KanbanBoard.test.tsx` verifies render, rename, add/remove card flows.
 - E2E tests:
-  - `tests/kanban.spec.ts` covers board load, card add flow, and card drag between columns.
+  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, and logout flow.
+  - `tests/container-webserver.mjs` starts/stops the Dockerized app for e2e execution.
 
 ## NPM Scripts
 
@@ -60,7 +68,7 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 ## Current Constraints
 
-- No authentication in frontend yet.
+- Auth uses backend cookie endpoints and hardcoded MVP credentials.
 - No backend API integration yet.
 - No persisted data yet.
 - No AI sidebar/chat yet.
