@@ -53,3 +53,14 @@ test("logs out and returns to login screen", async ({ page }) => {
   await page.getByRole("button", { name: /log out/i }).click();
   await expect(page.getByRole("button", { name: /^sign in$/i })).toBeVisible();
 });
+
+test("persists column rename after reload", async ({ page }) => {
+  await login(page);
+
+  const firstColumn = page.locator('[data-testid^="column-"]').first();
+  const titleInput = firstColumn.getByLabel("Column title");
+  await titleInput.fill("Persistent Backlog");
+
+  await page.reload();
+  await expect(firstColumn.getByLabel("Column title")).toHaveValue("Persistent Backlog");
+});

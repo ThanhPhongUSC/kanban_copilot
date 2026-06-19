@@ -20,7 +20,8 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 - `AuthGate` checks backend session at `/api/auth/session`.
 - Unauthenticated users see a login form.
 - Authenticated users see the Kanban board and a logout action.
-- Board state is currently local/in-memory (no backend persistence yet).
+- Authenticated board load uses `GET /api/board`.
+- Board changes are persisted via `PUT /api/board`.
 - The board has five columns by default.
 - Users can:
   - Sign in with demo credentials (`user` / `password`).
@@ -35,6 +36,7 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 - `src/app/page.tsx`: Home route entrypoint.
 - `src/components/KanbanBoard.tsx`: Top-level board state and drag/drop orchestration.
 - `src/components/AuthGate.tsx`: Login/session gate and logout behavior.
+- `src/components/AuthGate.tsx`: Also owns board loading/saving state with backend API.
 - `src/components/KanbanColumn.tsx`: Column rendering, title editing, add-card entrypoint.
 - `src/components/KanbanCard.tsx`: Sortable card UI and delete action.
 - `src/components/NewCardForm.tsx`: Inline add-card form.
@@ -54,7 +56,7 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
   - `src/components/AuthGate.test.tsx` verifies auth gate states and login handling.
   - `src/components/KanbanBoard.test.tsx` verifies render, rename, add/remove card flows.
 - E2E tests:
-  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, and logout flow.
+  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, logout, and persistence after reload.
   - `tests/container-webserver.mjs` starts/stops the Dockerized app for e2e execution.
 
 ## NPM Scripts
@@ -69,8 +71,8 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 ## Current Constraints
 
 - Auth uses backend cookie endpoints and hardcoded MVP credentials.
-- No backend API integration yet.
-- No persisted data yet.
+- Frontend assumes board API contract from backend (`status`, `board`, `version`).
+- Persistent board data is now backend-managed.
 - No AI sidebar/chat yet.
 
 ## Agent Working Rules for This Folder

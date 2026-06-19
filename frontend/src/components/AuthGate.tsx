@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import type { BoardData } from "@/lib/kanban";
 
 type AuthState = "loading" | "authenticated" | "unauthenticated";
 
@@ -10,6 +11,9 @@ export const AuthGate = () => {
   const [username, setUsername] = useState("user");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
+  const [boardError, setBoardError] = useState<string | null>(null);
+  const [boardData, setBoardData] = useState<BoardData | null>(null);
+  const [boardReloadToken, setBoardReloadToken] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -30,6 +34,35 @@ export const AuthGate = () => {
 
     void loadSession();
   }, []);
+
+  useEffect(() => {
+    if (authState !== "authenticated") {
+      return;
+    }
+
+    const loadBoard = async () => {
+      try {
+        setBoardError(null);
+        const response = await fetch("/api/board", {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          setBoardError("Unable to load board. Please try again.");
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          board: BoardData;
+        };
+        setBoardData(payload.board);
+      } catch {
+        setBoardError("Unable to load board. Please try again.");
+      }
+    };
+
+    void loadBoard();
+  }, [authState, boardReloadToken]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,6 +97,29 @@ export const AuthGate = () => {
     });
     setAuthState("unauthenticated");
     setError(null);
+    setBoardError(null);
+    setBoardData(null);
+  };
+
+  const handleBoardChange = async (next: BoardData) => {
+    setBoardData(next);
+    try {
+      const response = await fetch("/api/board", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+
+      if (!response.ok) {
+        setBoardError("Unable to save board changes.");
+        return;
+      }
+
+      setBoardError(null);
+    } catch {
+      setBoardError("Unable to save board changes.");
+    }
   };
 
   if (authState === "loading") {
@@ -137,8 +193,43 @@ export const AuthGate = () => {
     );
   }
 
+  if (boardError && !boardData) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[var(--surface)] px-6">
+        <section className="w-full max-w-md rounded-3xl border border-[var(--stroke)] bg-white p-8 shadow-[var(--shadow)]">
+          <h1 className="font-display text-2xl font-semibold text-[var(--navy-dark)]">
+            Could not load board
+          </h1>
+          <p className="mt-3 text-sm text-[var(--gray-text)]">{boardError}</p>
+          <button
+            type="button"
+            onClick={() => setBoardReloadToken((prev) => prev + 1)}
+            className="mt-6 rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
+          >
+            Retry
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (!boardData) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[var(--surface)] px-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+          Loading board...
+        </p>
+      </main>
+    );
+  }
+
   return (
     <>
+      {boardError ? (
+        <div className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-full border border-[#cf222e] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#cf222e]">
+          {boardError}
+        </div>
+      ) : null}
       <button
         type="button"
         onClick={handleLogout}
@@ -146,7 +237,7 @@ export const AuthGate = () => {
       >
         Log out
       </button>
-      <KanbanBoard />
+      <KanbanBoard boardData={boardData} onBoardChange={handleBoardChange} />
     </>
   );
 };

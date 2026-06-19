@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthGate } from "@/components/AuthGate";
+import { initialData } from "@/lib/kanban";
 
 const fetchMock = vi.fn();
 
@@ -28,12 +29,19 @@ describe("AuthGate", () => {
   });
 
   it("shows board when session is authenticated", async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ status: "ok", user: "user" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
-    );
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", user: "user" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", board: initialData, version: 1 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
 
     render(<AuthGate />);
 
@@ -46,6 +54,12 @@ describe("AuthGate", () => {
       .mockResolvedValueOnce(new Response("", { status: 401 }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ status: "ok", user: "user" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", board: initialData, version: 1 }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         })
@@ -76,5 +90,21 @@ describe("AuthGate", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Incorrect username or password."
     );
+  });
+
+  it("shows load error when board API fails after authentication", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", user: "user" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(new Response("", { status: 500 }));
+
+    render(<AuthGate />);
+
+    expect(await screen.findByText(/could not load board/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 });

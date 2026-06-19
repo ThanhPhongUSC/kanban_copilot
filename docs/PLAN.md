@@ -135,7 +135,7 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - [x] Enforce authenticated user scoping.
 - [x] Auto-create SQLite database if missing.
 - [x] Add input/output validation and error handling.
-- [ ] Pause for user approval.
+- [x] Pause for user approval.
 
 ### Tests
 
@@ -153,23 +153,23 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 ### Checklist
 
-- [ ] Replace in-memory frontend board initialization with backend API data.
-- [ ] Persist card/column edits through API.
-- [ ] Add loading, empty, and error states that keep UX simple.
-- [ ] Keep drag-and-drop behavior consistent with backend persistence.
+- [x] Replace in-memory frontend board initialization with backend API data.
+- [x] Persist card/column edits through API.
+- [x] Add loading, empty, and error states that keep UX simple.
+- [x] Keep drag-and-drop behavior consistent with backend persistence.
 - [ ] Pause for user approval.
 
 ### Tests
 
-- [ ] Unit tests for API client and state update logic.
-- [ ] Integration tests for optimistic/non-optimistic update behavior.
-- [ ] E2E: create/edit/move card survives page reload.
+- [x] Unit tests for API client and state update logic.
+- [x] Integration tests for optimistic/non-optimistic update behavior.
+- [x] E2E: create/edit/move card survives page reload.
 
 ### Success Criteria
 
-- [ ] Board is fully persistent.
-- [ ] Reload shows last saved state.
-- [ ] Core kanban interactions remain stable.
+- [x] Board is fully persistent.
+- [x] Reload shows last saved state.
+- [x] Core kanban interactions remain stable.
 
 ## Phase 8: AI Connectivity (OpenRouter Smoke)
 
