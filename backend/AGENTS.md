@@ -9,7 +9,7 @@ The backend directory contains the FastAPI service that will:
 - Manage auth/session and persistence for the MVP
 - Integrate with OpenRouter for AI features in later phases
 
-## Current Phase 6 Status
+## Current Phase 9 Status
 
 - `main.py` includes:
 	- `/api/health`
@@ -19,6 +19,7 @@ The backend directory contains the FastAPI service that will:
 	- `/api/board` (GET)
 	- `/api/board` (PUT)
 	- `/api/ai/smoke` (GET)
+	- `/api/ai/chat` (POST)
 	- static frontend serving at `/`
 - Auth uses a backend-managed HTTP-only cookie (`pm_session`).
 - MVP credentials are hardcoded to `user` / `password`.
@@ -27,6 +28,9 @@ The backend directory contains the FastAPI service that will:
 - Board state is stored as JSON plus a version field.
 - AI smoke call uses OpenRouter model `openai/gpt-oss-120b`.
 - AI smoke requires `OPENROUTER_API_KEY` in runtime environment.
+- AI chat sends board JSON, user question, and conversation history to model.
+- AI chat requires structured JSON response with assistant text and optional `board_update`.
+- When `board_update` is returned, backend validates and persists it.
 - In Docker runtime, `backend/static` is populated from the exported Next.js build.
 
 ## Working Rules

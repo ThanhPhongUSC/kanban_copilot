@@ -178,41 +178,41 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - [x] Add backend AI client wrapper using OpenRouter API key from `.env`.
 - [x] Implement simple diagnostic route or internal check for AI call.
 - [x] Validate model usage with `openai/gpt-oss-120b`.
-- [ ] Perform smoke prompt test (`2+2`). (Blocked: `.env` currently has no `OPENROUTER_API_KEY`)
-- [ ] Pause for user approval.
+- [ ] Perform smoke prompt test (`2+2`). (Blocked: OpenRouter account credits/limits)
+- [x] Pause for user approval.
 
 ### Tests
 
 - [x] Unit tests with mocked AI client.
 - [x] Integration test with mocked provider path and error handling.
-- [ ] Optional manual live smoke check in local environment. (Attempted; blocked by missing API key)
+- [ ] Optional manual live smoke check in local environment. (Attempted; blocked by provider credit/limit)
 
 ### Success Criteria
 
-- [ ] Backend can make successful OpenRouter request. (Pending API key in `.env`)
+- [ ] Backend can make successful OpenRouter request. (Pending provider credits/limits)
 - [x] Failure cases return clear, safe errors.
 
 ## Phase 9: Structured Output for Kanban-Aware AI
 
 ### Checklist
 
-- [ ] Define structured response schema for assistant reply + optional board mutation.
-- [ ] Send board JSON, user question, and conversation context to AI.
-- [ ] Validate and parse structured output safely.
-- [ ] Apply optional board updates through backend persistence path.
+- [x] Define structured response schema for assistant reply + optional board mutation.
+- [x] Send board JSON, user question, and conversation context to AI.
+- [x] Validate and parse structured output safely.
+- [x] Apply optional board updates through backend persistence path.
 - [ ] Pause for user approval.
 
 ### Tests
 
-- [ ] Unit tests for schema parsing and validation.
-- [ ] Unit tests for mutation application rules.
-- [ ] Integration tests for end-to-end AI response handling with mocks.
+- [x] Unit tests for schema parsing and validation.
+- [x] Unit tests for mutation application rules.
+- [x] Integration tests for end-to-end AI response handling with mocks.
 
 ### Success Criteria
 
-- [ ] AI response is deterministic in shape.
-- [ ] Optional board updates are validated before apply.
-- [ ] Invalid AI output cannot corrupt board state.
+- [x] AI response is deterministic in shape.
+- [x] Optional board updates are validated before apply.
+- [x] Invalid AI output cannot corrupt board state.
 
 ## Phase 10: Sidebar AI Chat UX + Live Board Refresh
 

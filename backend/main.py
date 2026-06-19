@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -63,6 +64,30 @@ class AISmokeResponse(BaseModel):
     model: str
     prompt: str
     answer: str
+
+
+class ChatTurn(BaseModel):
+    role: str
+    content: str
+
+
+class AIChatRequest(BaseModel):
+    question: str
+    history: list[ChatTurn] = []
+
+
+class AIModelStructuredResponse(BaseModel):
+    assistant_response: str
+    board_update: BoardData | None = None
+
+
+class AIChatResponse(BaseModel):
+    status: str
+    model: str
+    assistantResponse: str
+    boardUpdated: bool
+    board: BoardData
+    version: int
 
 
 DEFAULT_BOARD: dict[str, Any] = {
@@ -304,6 +329,159 @@ def call_openrouter_smoke(prompt: str) -> str:
     return content.strip()
 
 
+def _extract_message_content(data: dict[str, Any]) -> str:
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise HTTPException(status_code=502, detail="AI provider response was invalid")
+
+    message = choices[0].get("message", {})
+    content = message.get("content")
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        text_parts = [part.get("text", "") for part in content if isinstance(part, dict)]
+        joined = "".join(text_parts).strip()
+        if joined:
+            return joined
+
+    raise HTTPException(status_code=502, detail="AI provider response was invalid")
+
+
+def _parse_structured_json(raw_content: str) -> dict[str, Any]:
+    try:
+        return json.loads(raw_content)
+    except json.JSONDecodeError:
+        match = re.search(r"\{[\s\S]*\}", raw_content)
+        if not match:
+            raise HTTPException(status_code=502, detail="AI provider response was invalid")
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=502, detail="AI provider response was invalid") from exc
+
+
+def call_openrouter_structured_chat(
+    board: BoardData,
+    question: str,
+    history: list[ChatTurn],
+) -> AIModelStructuredResponse:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AI is not configured")
+
+    history_text = "\n".join([f"{turn.role}: {turn.content}" for turn in history])
+    board_json = json.dumps(board.model_dump(mode="json"), indent=2)
+
+    schema = {
+        "name": "kanban_assistant_response",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "assistant_response": {"type": "string"},
+                "board_update": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "columns": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {"type": "string"},
+                                            "title": {"type": "string"},
+                                            "cardIds": {
+                                                "type": "array",
+                                                "items": {"type": "string"},
+                                            },
+                                        },
+                                        "required": ["id", "title", "cardIds"],
+                                        "additionalProperties": False,
+                                    },
+                                },
+                                "cards": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {"type": "string"},
+                                            "title": {"type": "string"},
+                                            "details": {"type": "string"},
+                                        },
+                                        "required": ["id", "title", "details"],
+                                        "additionalProperties": False,
+                                    },
+                                },
+                            },
+                            "required": ["columns", "cards"],
+                            "additionalProperties": False,
+                        },
+                        {"type": "null"},
+                    ]
+                },
+            },
+            "required": ["assistant_response", "board_update"],
+            "additionalProperties": False,
+        },
+    }
+
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are a project management assistant. "
+                    "Use the board JSON and user question to produce JSON matching the schema exactly. "
+                    "Only set board_update when a board change is necessary."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Current board JSON:\n"
+                    f"{board_json}\n\n"
+                    "Conversation history:\n"
+                    f"{history_text or '(none)'}\n\n"
+                    "User question:\n"
+                    f"{question}"
+                ),
+            },
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": schema,
+        },
+        "temperature": 0,
+    }
+
+    try:
+        response = httpx.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=45.0,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="AI provider is unavailable") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="AI provider returned an error")
+
+    data = response.json()
+    raw_content = _extract_message_content(data)
+    parsed = _parse_structured_json(raw_content)
+    try:
+        return AIModelStructuredResponse.model_validate(parsed)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="AI provider response was invalid") from exc
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "pm-mvp-backend"}
@@ -370,6 +548,41 @@ def ai_smoke(_: str = Depends(get_current_username)) -> AISmokeResponse:
         model=OPENROUTER_MODEL,
         prompt=prompt,
         answer=answer,
+    )
+
+
+@app.post("/api/ai/chat", response_model=AIChatResponse)
+def ai_chat(
+    payload: AIChatRequest,
+    username: str = Depends(get_current_username),
+) -> AIChatResponse:
+    current_board_payload, current_version = get_board_for_user(username)
+    current_board = BoardData.model_validate(current_board_payload)
+
+    model_response = call_openrouter_structured_chat(
+        board=current_board,
+        question=payload.question,
+        history=payload.history,
+    )
+
+    if model_response.board_update is not None:
+        saved_payload, saved_version = save_board_for_user(username, model_response.board_update)
+        return AIChatResponse(
+            status="ok",
+            model=OPENROUTER_MODEL,
+            assistantResponse=model_response.assistant_response,
+            boardUpdated=True,
+            board=BoardData.model_validate(saved_payload),
+            version=saved_version,
+        )
+
+    return AIChatResponse(
+        status="ok",
+        model=OPENROUTER_MODEL,
+        assistantResponse=model_response.assistant_response,
+        boardUpdated=False,
+        board=current_board,
+        version=current_version,
     )
 
 

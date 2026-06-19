@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from pathlib import Path
 
@@ -221,3 +222,141 @@ def test_ai_smoke_handles_provider_network_failure(
 
     assert response.status_code == 502
     assert response.json()["detail"] == "AI provider is unavailable"
+
+
+def test_ai_chat_requires_authentication() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "What should I do next?", "history": []},
+        )
+
+    assert response.status_code == 401
+
+
+def test_ai_chat_returns_response_without_board_update(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "assistant_response": "Focus on backlog grooming this week.",
+                                    "board_update": None,
+                                }
+                            )
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+    with TestClient(app) as client:
+        login(client)
+        before = client.get("/api/board").json()
+
+        response = client.post(
+            "/api/ai/chat",
+            json={
+                "question": "What should I focus on?",
+                "history": [{"role": "user", "content": "Any suggestions?"}],
+            },
+        )
+        after = client.get("/api/board").json()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["assistantResponse"] == "Focus on backlog grooming this week."
+    assert payload["boardUpdated"] is False
+    assert payload["version"] == before["version"]
+    assert after["version"] == before["version"]
+
+
+def test_ai_chat_applies_board_update(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    with TestClient(app) as client:
+        login(client)
+        current_board = client.get("/api/board").json()
+        next_board = current_board["board"]
+        next_board["columns"][0]["title"] = "AI Updated Backlog"
+
+        class FakeResponse:
+            status_code = 200
+
+            @staticmethod
+            def json() -> dict[str, object]:
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "assistant_response": "I renamed the first column.",
+                                        "board_update": next_board,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "Rename backlog to AI Updated Backlog", "history": []},
+        )
+        reloaded = client.get("/api/board").json()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["boardUpdated"] is True
+    assert payload["board"]["columns"][0]["title"] == "AI Updated Backlog"
+    assert payload["version"] == current_board["version"] + 1
+    assert reloaded["board"]["columns"][0]["title"] == "AI Updated Backlog"
+
+
+def test_ai_chat_invalid_structured_response_returns_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "not-json",
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+    with TestClient(app) as client:
+        login(client)
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "Plan next sprint", "history": []},
+        )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "AI provider response was invalid"
