@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PM MVP Backend Hello</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f4f8ff;
+        color: #032147;
+      }
+      main {
+        max-width: 760px;
+        margin: 48px auto;
+        padding: 24px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid rgba(3, 33, 71, 0.12);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 24px rgba(3, 33, 71, 0.08);
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      pre {
+        margin: 0;
+        padding: 12px;
+        border-radius: 12px;
+        background: #eef4ff;
+        overflow-x: auto;
+      }
+      .status {
+        margin-top: 16px;
+        display: grid;
+        gap: 10px;
+      }
+      .ok {
+        color: #1a7f37;
+      }
+      .error {
+        color: #cf222e;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <h1>PM MVP Backend Hello World</h1>
+        <p>This confirms static HTML is served from FastAPI at <strong>/</strong>.</p>
+        <div class="status">
+          <div id="health-label">Checking <code>/api/health</code>...</div>
+          <pre id="health-json">pending</pre>
+        </div>
+      </section>
+    </main>
+    <script>
+      const label = document.getElementById("health-label");
+      const output = document.getElementById("health-json");
+
+      fetch("/api/health")
+        .then((response) => response.json())
+        .then((json) => {
+          label.textContent = "API reachable: /api/health";
+          label.className = "ok";
+          output.textContent = JSON.stringify(json, null, 2);
+        })
+        .catch((error) => {
+          label.textContent = "API check failed";
+          label.className = "error";
+          output.textContent = String(error);
+        });
+    </script>
+  </body>
+</html>
