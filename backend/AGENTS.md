@@ -16,6 +16,12 @@ The backend directory contains the FastAPI service that will:
 - `tests/test_app.py`: backend tests for health endpoint and root page serving.
 - `pyproject.toml`: backend dependencies and pytest configuration.
 
+## Current Phase 3 Status
+
+- In Docker runtime, `backend/static` is populated from the exported Next.js build.
+- FastAPI serves the frontend static build at `/` and keeps API routes at `/api/*`.
+- Local backend tests still validate static serving and health endpoint behavior.
+
 ## Working Rules
 
 - Keep API routes grouped under `/api/*`.
