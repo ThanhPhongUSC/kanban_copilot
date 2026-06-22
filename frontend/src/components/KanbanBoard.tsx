@@ -13,7 +13,13 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
-import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
+import {
+  createId,
+  initialData,
+  moveCard,
+  type BoardData,
+  type Card,
+} from "@/lib/kanban";
 
 type KanbanBoardProps = {
   boardData?: BoardData;
@@ -163,7 +169,9 @@ export const KanbanBoard = ({ boardData, onBoardChange }: KanbanBoardProps) => {
               <KanbanColumn
                 key={column.id}
                 column={column}
-                cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                cards={column.cardIds
+                  .map((cardId) => board.cards[cardId])
+                  .filter((card): card is Card => Boolean(card))}
                 onRename={handleRenameColumn}
                 onAddCard={handleAddCard}
                 onDeleteCard={handleDeleteCard}

@@ -5,7 +5,7 @@
 - Backend OpenRouter AI smoke integration is implemented.
 - Authenticated endpoint added:
   - `GET /api/ai/smoke`
-- Endpoint sends prompt `2+2` to model `openai/gpt-oss-120b`.
+- Endpoint sends prompt `2+2` to model `openai/gpt-oss-120b:free`.
 - Endpoint includes robust failure responses:
   - `503` when API key is missing
   - `502` when provider is unavailable or returns invalid response
@@ -62,7 +62,7 @@ Expected successful response shape:
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-oss-120b",
+  "model": "openai/gpt-oss-120b:free",
   "prompt": "What is 2+2? Reply with only the final number.",
   "answer": "4"
 }

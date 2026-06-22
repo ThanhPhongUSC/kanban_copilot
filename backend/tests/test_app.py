@@ -202,7 +202,7 @@ def test_ai_smoke_returns_model_response(monkeypatch: pytest.MonkeyPatch) -> Non
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ok"
-    assert payload["model"] == "openai/gpt-oss-120b"
+    assert payload["model"] == "openai/gpt-oss-120b:free"
     assert payload["answer"] == "4"
 
 
@@ -327,6 +327,68 @@ def test_ai_chat_applies_board_update(
     assert payload["board"]["columns"][0]["title"] == "AI Updated Backlog"
     assert payload["version"] == current_board["version"] + 1
     assert reloaded["board"]["columns"][0]["title"] == "AI Updated Backlog"
+
+
+def test_ai_chat_merges_partial_board_update_without_dropping_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    with TestClient(app) as client:
+        login(client)
+        current_board = client.get("/api/board").json()["board"]
+
+        partial_update = {
+            "columns": [
+                {"id": "col-backlog", "title": "Backlog", "cardIds": []},
+                {
+                    "id": "col-progress",
+                    "title": "In Progress",
+                    "cardIds": ["card-4", "card-5", "card-1", "card-2"],
+                },
+            ],
+            "cards": {},
+        }
+
+        class FakeResponse:
+            status_code = 200
+
+            @staticmethod
+            def json() -> dict[str, object]:
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "assistant_response": "Moved backlog cards to in progress.",
+                                        "board_update": partial_update,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "Move backlog cards to In Progress", "history": []},
+        )
+        reloaded = client.get("/api/board").json()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["boardUpdated"] is True
+    assert len(payload["board"]["columns"]) == len(current_board["columns"])
+    assert "card-1" in payload["board"]["cards"]
+
+    columns_by_id = {column["id"]: column for column in payload["board"]["columns"]}
+    assert columns_by_id["col-backlog"]["cardIds"] == []
+    assert "card-1" in columns_by_id["col-progress"]["cardIds"]
+    assert "card-2" in columns_by_id["col-progress"]["cardIds"]
+    assert reloaded["board"] == payload["board"]
 
 
 def test_ai_chat_invalid_structured_response_returns_error(

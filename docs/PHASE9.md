@@ -34,7 +34,7 @@ Response:
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-oss-120b",
+  "model": "openai/gpt-oss-120b:free",
   "assistantResponse": "Focus on ...",
   "boardUpdated": false,
   "board": { "columns": [], "cards": {} },

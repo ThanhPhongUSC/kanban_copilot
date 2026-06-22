@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 DEFAULT_DB_PATH = BASE_DIR / "data" / "pm.db"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "openai/gpt-oss-120b"
+OPENROUTER_MODEL = "openai/gpt-oss-120b:free"
 SESSION_COOKIE_NAME = "pm_session"
 DEMO_USERNAME = "user"
 DEMO_PASSWORD = "password"
@@ -269,6 +269,68 @@ def save_board_for_user(username: str, board: BoardData) -> tuple[dict[str, Any]
             )
 
     return board_payload, next_version
+
+
+def merge_ai_board_update(current_board: BoardData, proposed_board: BoardData) -> BoardData:
+    current_payload = current_board.model_dump(mode="json")
+    proposed_payload = proposed_board.model_dump(mode="json")
+
+    merged_cards: dict[str, dict[str, Any]] = dict(current_payload["cards"])
+    merged_cards.update(proposed_payload["cards"])
+
+    proposed_columns_by_id = {
+        column["id"]: column for column in proposed_payload["columns"]
+    }
+
+    merged_columns: list[dict[str, Any]] = []
+    seen_column_ids: set[str] = set()
+    for column in current_payload["columns"]:
+        replacement = proposed_columns_by_id.get(column["id"])
+        if replacement:
+            merged_columns.append(
+                {
+                    "id": column["id"],
+                    "title": replacement["title"],
+                    "cardIds": list(replacement["cardIds"]),
+                }
+            )
+        else:
+            merged_columns.append(
+                {
+                    "id": column["id"],
+                    "title": column["title"],
+                    "cardIds": list(column["cardIds"]),
+                }
+            )
+        seen_column_ids.add(column["id"])
+
+    for column in proposed_payload["columns"]:
+        if column["id"] not in seen_column_ids:
+            merged_columns.append(
+                {
+                    "id": column["id"],
+                    "title": column["title"],
+                    "cardIds": list(column["cardIds"]),
+                }
+            )
+
+    valid_card_ids = set(merged_cards.keys())
+    placed_card_ids: set[str] = set()
+    for column in merged_columns:
+        cleaned_card_ids: list[str] = []
+        for card_id in column["cardIds"]:
+            if card_id in valid_card_ids and card_id not in placed_card_ids:
+                cleaned_card_ids.append(card_id)
+                placed_card_ids.add(card_id)
+        column["cardIds"] = cleaned_card_ids
+
+    unplaced_cards = [
+        card_id for card_id in merged_cards.keys() if card_id not in placed_card_ids
+    ]
+    if unplaced_cards and merged_columns:
+        merged_columns[0]["cardIds"].extend(unplaced_cards)
+
+    return BoardData.model_validate({"columns": merged_columns, "cards": merged_cards})
 
 
 def get_current_username(pm_session: str | None = Cookie(default=None)) -> str:
@@ -566,7 +628,8 @@ def ai_chat(
     )
 
     if model_response.board_update is not None:
-        saved_payload, saved_version = save_board_for_user(username, model_response.board_update)
+        merged_board = merge_ai_board_update(current_board, model_response.board_update)
+        saved_payload, saved_version = save_board_for_user(username, merged_board)
         return AIChatResponse(
             status="ok",
             model=OPENROUTER_MODEL,

@@ -26,7 +26,7 @@ The backend directory contains the FastAPI service that will:
 - SQLite database is auto-created if missing.
 - Users and boards are persisted in SQLite.
 - Board state is stored as JSON plus a version field.
-- AI smoke call uses OpenRouter model `openai/gpt-oss-120b`.
+- AI smoke call uses OpenRouter model `openai/gpt-oss-120b:free`.
 - AI smoke requires `OPENROUTER_API_KEY` in runtime environment.
 - AI chat sends board JSON, user question, and conversation history to model.
 - AI chat requires structured JSON response with assistant text and optional `board_update`.

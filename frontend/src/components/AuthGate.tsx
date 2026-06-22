@@ -1,10 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { AIChatSidebar } from "@/components/AIChatSidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import type { BoardData } from "@/lib/kanban";
 
 type AuthState = "loading" | "authenticated" | "unauthenticated";
+
+type AIChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 export const AuthGate = () => {
   const [authState, setAuthState] = useState<AuthState>("loading");
@@ -14,6 +20,9 @@ export const AuthGate = () => {
   const [boardError, setBoardError] = useState<string | null>(null);
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [boardReloadToken, setBoardReloadToken] = useState(0);
+  const [chatMessages, setChatMessages] = useState<AIChatMessage[]>([]);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [isChatSubmitting, setIsChatSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -99,6 +108,8 @@ export const AuthGate = () => {
     setError(null);
     setBoardError(null);
     setBoardData(null);
+    setChatMessages([]);
+    setChatError(null);
   };
 
   const handleBoardChange = async (next: BoardData) => {
@@ -119,6 +130,54 @@ export const AuthGate = () => {
       setBoardError(null);
     } catch {
       setBoardError("Unable to save board changes.");
+    }
+  };
+
+  const handleSendChat = async (question: string) => {
+    if (!boardData) {
+      return;
+    }
+
+    const nextUserMessage: AIChatMessage = { role: "user", content: question };
+    const nextHistory = [...chatMessages, nextUserMessage];
+    setChatMessages(nextHistory);
+    setChatError(null);
+    setIsChatSubmitting(true);
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          history: nextHistory,
+        }),
+      });
+
+      if (!response.ok) {
+        setChatError("AI request failed. Please try again.");
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        assistantResponse: string;
+        boardUpdated: boolean;
+        board: BoardData;
+      };
+
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: payload.assistantResponse },
+      ]);
+
+      if (payload.boardUpdated) {
+        setBoardData(payload.board);
+      }
+    } catch {
+      setChatError("AI request failed. Please try again.");
+    } finally {
+      setIsChatSubmitting(false);
     }
   };
 
@@ -237,7 +296,15 @@ export const AuthGate = () => {
       >
         Log out
       </button>
-      <KanbanBoard boardData={boardData} onBoardChange={handleBoardChange} />
+      <div className="lg:pr-[380px]">
+        <KanbanBoard boardData={boardData} onBoardChange={handleBoardChange} />
+      </div>
+      <AIChatSidebar
+        messages={chatMessages}
+        isSubmitting={isChatSubmitting}
+        error={chatError}
+        onSend={handleSendChat}
+      />
     </>
   );
 };

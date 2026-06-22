@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { initialData } from "@/lib/kanban";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
@@ -42,5 +43,19 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("renders safely when card references are stale", () => {
+    const boardData = {
+      ...initialData,
+      columns: initialData.columns.map((column, index) =>
+        index === 0
+          ? { ...column, cardIds: [...column.cardIds, "card-missing"] }
+          : column
+      ),
+    };
+
+    render(<KanbanBoard boardData={boardData} />);
+    expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
   });
 });

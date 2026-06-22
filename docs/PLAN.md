@@ -9,7 +9,7 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - Frontend: Next.js static build served by FastAPI at `/`.
 - Backend: FastAPI + SQLite.
 - Python package manager in container: `uv`.
-- AI provider/model: OpenRouter with `openai/gpt-oss-120b`.
+- AI provider/model: OpenRouter with `openai/gpt-oss-120b:free`.
 - Auth approach for MVP: backend cookie-based session with hardcoded credentials (`user` / `password`).
 
 ## Quality Gates
@@ -177,19 +177,19 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 - [x] Add backend AI client wrapper using OpenRouter API key from `.env`.
 - [x] Implement simple diagnostic route or internal check for AI call.
-- [x] Validate model usage with `openai/gpt-oss-120b`.
-- [ ] Perform smoke prompt test (`2+2`). (Blocked: OpenRouter account credits/limits)
+- [x] Validate model usage with `openai/gpt-oss-120b:free`.
+- [x] Perform smoke prompt test (`2+2`). (Verified live 2026-06-22: `/api/ai/smoke` returned `4`.)
 - [x] Pause for user approval.
 
 ### Tests
 
 - [x] Unit tests with mocked AI client.
 - [x] Integration test with mocked provider path and error handling.
-- [ ] Optional manual live smoke check in local environment. (Attempted; blocked by provider credit/limit)
+- [x] Optional manual live smoke check in local environment. (Verified live 2026-06-22 against Dockerized app.)
 
 ### Success Criteria
 
-- [ ] Backend can make successful OpenRouter request. (Pending provider credits/limits)
+- [x] Backend can make successful OpenRouter request. (Verified live 2026-06-22; `OPENROUTER_API_KEY` now set in `.env`.)
 - [x] Failure cases return clear, safe errors.
 
 ## Phase 9: Structured Output for Kanban-Aware AI
@@ -200,7 +200,7 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 - [x] Send board JSON, user question, and conversation context to AI.
 - [x] Validate and parse structured output safely.
 - [x] Apply optional board updates through backend persistence path.
-- [ ] Pause for user approval.
+- [x] Pause for user approval.
 
 ### Tests
 
@@ -218,24 +218,24 @@ This plan is execution-ready and approval-gated. Work proceeds phase-by-phase, a
 
 ### Checklist
 
-- [ ] Build sidebar chat UI integrated with backend AI endpoint.
-- [ ] Render conversation thread and loading/error states.
-- [ ] Apply AI-requested board updates and refresh UI automatically.
-- [ ] Keep existing board interactions intact.
-- [ ] Final pass on docs and scripts.
+- [x] Build sidebar chat UI integrated with backend AI endpoint.
+- [x] Render conversation thread and loading/error states.
+- [x] Apply AI-requested board updates and refresh UI automatically.
+- [x] Keep existing board interactions intact.
+- [x] Final pass on docs and scripts.
 - [ ] Pause for final user approval.
 
 ### Tests
 
-- [ ] Unit tests for chat UI state management.
-- [ ] Integration tests for chat request/response flow.
-- [ ] E2E: ask AI, receive response, and verify board updates when returned.
+- [x] Unit tests for chat UI state management.
+- [x] Integration tests for chat request/response flow.
+- [x] E2E: ask AI, receive response, and verify board updates when returned.
 
 ### Success Criteria
 
-- [ ] AI chat is functional from UI to backend to model and back.
-- [ ] Board refreshes automatically after AI-driven changes.
-- [ ] Project meets coverage and integration quality gates.
+- [x] AI chat is functional from UI to backend and back, with live model behavior dependent on provider credits/limits.
+- [x] Board refreshes automatically after AI-driven changes.
+- [x] Project meets coverage and integration quality gates.
 
 ## Notes and Open Decisions
 

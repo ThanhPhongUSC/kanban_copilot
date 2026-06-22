@@ -22,6 +22,9 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 - Authenticated users see the Kanban board and a logout action.
 - Authenticated board load uses `GET /api/board`.
 - Board changes are persisted via `PUT /api/board`.
+- Authenticated users see an AI sidebar chat (`Board Copilot`).
+- AI chat requests are sent via `POST /api/ai/chat`.
+- AI responses may include board updates that are applied immediately in UI.
 - The board has five columns by default.
 - Users can:
   - Sign in with demo credentials (`user` / `password`).
@@ -37,6 +40,8 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 - `src/components/KanbanBoard.tsx`: Top-level board state and drag/drop orchestration.
 - `src/components/AuthGate.tsx`: Login/session gate and logout behavior.
 - `src/components/AuthGate.tsx`: Also owns board loading/saving state with backend API.
+- `src/components/AuthGate.tsx`: Also owns AI chat state and AI-driven board refresh behavior.
+- `src/components/AIChatSidebar.tsx`: Sidebar chat thread, input, loading, and error UI.
 - `src/components/KanbanColumn.tsx`: Column rendering, title editing, add-card entrypoint.
 - `src/components/KanbanCard.tsx`: Sortable card UI and delete action.
 - `src/components/NewCardForm.tsx`: Inline add-card form.
@@ -53,11 +58,11 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 - Unit/component tests:
   - `src/lib/kanban.test.ts` verifies `moveCard` logic.
-  - `src/components/AuthGate.test.tsx` verifies auth gate states and login handling.
+  - `src/components/AuthGate.test.tsx` verifies auth gate states, board fetch paths, and AI chat board-update application.
   - `src/components/KanbanBoard.test.tsx` verifies render, rename, add/remove card flows.
 - E2E tests:
-  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, logout, and persistence after reload.
-  - `tests/container-webserver.mjs` starts/stops the Dockerized app for e2e execution.
+  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, logout, persistence after reload, AI sidebar visibility, and mocked AI board update.
+  - `tests/container-webserver.mjs` starts/stops the Dockerized app for e2e execution and resets persisted DB state for deterministic runs.
 
 ## NPM Scripts
 
@@ -73,7 +78,7 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 - Auth uses backend cookie endpoints and hardcoded MVP credentials.
 - Frontend assumes board API contract from backend (`status`, `board`, `version`).
 - Persistent board data is now backend-managed.
-- No AI sidebar/chat yet.
+- AI chat behavior depends on backend/provider availability; mocked tests cover structured update paths.
 
 ## Agent Working Rules for This Folder
 

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,6 +29,13 @@ const runScript = (scriptPath) => {
 
   return spawnSync("bash", [scriptPath], { stdio: "inherit" });
 };
+
+// Ensure e2e starts from a clean persisted board state.
+for (const suffix of ["", "-shm", "-wal"]) {
+  rmSync(path.join(repoRoot, "backend", "data", `pm.db${suffix}`), {
+    force: true,
+  });
+}
 
 const startResult = runScript(startScript);
 if (startResult.status !== 0) {

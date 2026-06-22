@@ -1,5 +1,57 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const aiUpdatedBoard = {
+  columns: [
+    { id: "col-backlog", title: "AI Strategy", cardIds: ["card-1", "card-2"] },
+    { id: "col-discovery", title: "Discovery", cardIds: ["card-3"] },
+    { id: "col-progress", title: "In Progress", cardIds: ["card-4", "card-5"] },
+    { id: "col-review", title: "Review", cardIds: ["card-6"] },
+    { id: "col-done", title: "Done", cardIds: ["card-7", "card-8"] },
+  ],
+  cards: {
+    "card-1": {
+      id: "card-1",
+      title: "Align roadmap themes",
+      details: "Draft quarterly themes with impact statements and metrics.",
+    },
+    "card-2": {
+      id: "card-2",
+      title: "Gather customer signals",
+      details: "Review support tags, sales notes, and churn feedback.",
+    },
+    "card-3": {
+      id: "card-3",
+      title: "Prototype analytics view",
+      details: "Sketch initial dashboard layout and key drill-downs.",
+    },
+    "card-4": {
+      id: "card-4",
+      title: "Refine status language",
+      details: "Standardize column labels and tone across the board.",
+    },
+    "card-5": {
+      id: "card-5",
+      title: "Design card layout",
+      details: "Add hierarchy and spacing for scanning dense lists.",
+    },
+    "card-6": {
+      id: "card-6",
+      title: "QA micro-interactions",
+      details: "Verify hover, focus, and loading states.",
+    },
+    "card-7": {
+      id: "card-7",
+      title: "Ship marketing page",
+      details: "Final copy approved and asset pack delivered.",
+    },
+    "card-8": {
+      id: "card-8",
+      title: "Close onboarding sprint",
+      details: "Document release notes and share internally.",
+    },
+  },
+};
+
 const login = async (page: Page) => {
   await page.goto("/");
   await page.getByLabel("Username").fill("user");
@@ -21,7 +73,7 @@ test("adds a card to a column", async ({ page }) => {
   await firstColumn.getByPlaceholder("Card title").fill("Playwright card");
   await firstColumn.getByPlaceholder("Details").fill("Added via e2e.");
   await firstColumn.getByRole("button", { name: /add card/i }).click();
-  await expect(firstColumn.getByText("Playwright card")).toBeVisible();
+  await expect(firstColumn.getByText("Playwright card").first()).toBeVisible();
 });
 
 test("moves a card between columns", async ({ page }) => {
@@ -63,4 +115,35 @@ test("persists column rename after reload", async ({ page }) => {
 
   await page.reload();
   await expect(firstColumn.getByLabel("Column title")).toHaveValue("Persistent Backlog");
+});
+
+test("shows AI sidebar for authenticated users", async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId("ai-chat-sidebar")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Board Copilot" })).toBeVisible();
+});
+
+test("applies AI board update from sidebar chat", async ({ page }) => {
+  await page.route("**/api/ai/chat", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        status: "ok",
+        model: "openai/gpt-oss-120b:free",
+        assistantResponse: "Updated backlog title to AI Strategy.",
+        boardUpdated: true,
+        board: aiUpdatedBoard,
+        version: 2,
+      }),
+    });
+  });
+
+  await login(page);
+  await page.getByLabel("AI chat input").fill("Rename backlog to AI Strategy");
+  await page.getByTestId("ai-chat-send").click({ force: true });
+
+  await expect(page.getByText("Updated backlog title to AI Strategy.")).toBeVisible();
+  const firstColumn = page.locator('[data-testid^="column-"]').first();
+  await expect(firstColumn.getByLabel("Column title")).toHaveValue("AI Strategy");
 });
