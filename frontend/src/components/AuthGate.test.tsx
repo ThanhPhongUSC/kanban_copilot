@@ -163,4 +163,76 @@ describe("AuthGate", () => {
       expect(fetchMock).toHaveBeenCalledWith("/api/ai/chat", expect.any(Object));
     });
   });
+
+  it("sends only prior turns as history, not the current question", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", user: "user" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", board: initialData, version: 1 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: "ok",
+            model: "openai/gpt-oss-120b:free",
+            assistantResponse: "Sure.",
+            boardUpdated: false,
+            board: initialData,
+            version: 1,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+
+    render(<AuthGate />);
+
+    expect(await screen.findByText("Kanban Board Mock")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("AI chat input"), "First question");
+    await userEvent.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await screen.findByText("Sure.");
+
+    const chatCall = fetchMock.mock.calls.find(([url]) => url === "/api/ai/chat");
+    expect(chatCall).toBeDefined();
+    const body = JSON.parse((chatCall![1] as RequestInit).body as string);
+    expect(body.question).toBe("First question");
+    expect(body.history).toEqual([]);
+  });
+
+  it("shows an error when the AI chat request fails", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", user: "user" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "ok", board: initialData, version: 1 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(new Response("", { status: 500 }));
+
+    render(<AuthGate />);
+
+    expect(await screen.findByText("Kanban Board Mock")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("AI chat input"), "Help me plan");
+    await userEvent.click(screen.getByRole("button", { name: /^send$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "AI request failed. Please try again."
+    );
+  });
 });

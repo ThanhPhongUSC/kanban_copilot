@@ -6,7 +6,6 @@ import pytest
 import httpx
 from fastapi.testclient import TestClient
 
-import main
 from main import app
 
 
@@ -101,6 +100,15 @@ def test_logout_clears_cookie() -> None:
         assert session_response.status_code == 401
 
 
+def test_forged_session_cookie_is_rejected() -> None:
+    with TestClient(app) as client:
+        client.cookies.set("pm_session", "user")
+        response = client.get("/api/board")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+
 def test_board_endpoints_require_authentication() -> None:
     with TestClient(app) as client:
         get_response = client.get("/api/board")
@@ -193,7 +201,7 @@ def test_ai_smoke_returns_model_response(monkeypatch: pytest.MonkeyPatch) -> Non
                 ]
             }
 
-    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
 
     with TestClient(app) as client:
         login(client)
@@ -214,7 +222,7 @@ def test_ai_smoke_handles_provider_network_failure(
     def raise_http_error(*args, **kwargs):
         raise httpx.ConnectError("network down")
 
-    monkeypatch.setattr(main.httpx, "post", raise_http_error)
+    monkeypatch.setattr(httpx, "post", raise_http_error)
 
     with TestClient(app) as client:
         login(client)
@@ -259,7 +267,7 @@ def test_ai_chat_returns_response_without_board_update(
                 ]
             }
 
-    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
 
     with TestClient(app) as client:
         login(client)
@@ -313,7 +321,7 @@ def test_ai_chat_applies_board_update(
                     ]
                 }
 
-        monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+        monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
 
         response = client.post(
             "/api/ai/chat",
@@ -370,7 +378,7 @@ def test_ai_chat_merges_partial_board_update_without_dropping_data(
                     ]
                 }
 
-        monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+        monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
 
         response = client.post(
             "/api/ai/chat",
@@ -389,6 +397,81 @@ def test_ai_chat_merges_partial_board_update_without_dropping_data(
     assert "card-1" in columns_by_id["col-progress"]["cardIds"]
     assert "card-2" in columns_by_id["col-progress"]["cardIds"]
     assert reloaded["board"] == payload["board"]
+
+
+def test_ai_chat_provider_error_returns_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    class FakeResponse:
+        status_code = 402
+        text = '{"error": "insufficient credits"}'
+
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {"error": "insufficient credits"}
+
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+    with TestClient(app) as client:
+        login(client)
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "Plan next sprint", "history": []},
+        )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "AI provider returned an error"
+
+
+def test_ai_chat_ignores_malformed_board_update(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "assistant_response": "Here is some advice.",
+                                    # Wrong shape: columns should be objects, not strings.
+                                    "board_update": {
+                                        "columns": ["Backlog"],
+                                        "cards": {},
+                                    },
+                                }
+                            )
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
+
+    with TestClient(app) as client:
+        login(client)
+        before = client.get("/api/board").json()
+
+        response = client.post(
+            "/api/ai/chat",
+            json={"question": "Give me advice", "history": []},
+        )
+        after = client.get("/api/board").json()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["assistantResponse"] == "Here is some advice."
+    assert payload["boardUpdated"] is False
+    assert payload["version"] == before["version"]
+    assert after["version"] == before["version"]
 
 
 def test_ai_chat_invalid_structured_response_returns_error(
@@ -411,7 +494,7 @@ def test_ai_chat_invalid_structured_response_returns_error(
                 ]
             }
 
-    monkeypatch.setattr(main.httpx, "post", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: FakeResponse())
 
     with TestClient(app) as client:
         login(client)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -28,13 +28,14 @@ type KanbanBoardProps = {
 
 export const KanbanBoard = ({ boardData, onBoardChange }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData>(() => boardData ?? initialData);
+  const [syncedBoardData, setSyncedBoardData] = useState(boardData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (boardData) {
-      setBoard(boardData);
-    }
-  }, [boardData]);
+  // Sync local board when the parent supplies new board data (load or AI update).
+  if (boardData && boardData !== syncedBoardData) {
+    setSyncedBoardData(boardData);
+    setBoard(boardData);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type AIChatMessage = {
   role: "user" | "assistant";
@@ -21,6 +21,14 @@ export const AIChatSidebar = ({
   onSend,
 }: AIChatSidebarProps) => {
   const [draft, setDraft] = useState("");
+  const threadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread) {
+      thread.scrollTop = thread.scrollHeight;
+    }
+  }, [messages, isSubmitting]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,10 +55,10 @@ export const AIChatSidebar = ({
         </p>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+      <div ref={threadRef} className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
         {messages.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--stroke)] p-4 text-sm text-[var(--gray-text)]">
-            Start a chat with a question like "What should we prioritize this week?"
+            {'Start a chat with a question like "What should we prioritize this week?"'}
           </div>
         ) : null}
         {messages.map((message, index) => (

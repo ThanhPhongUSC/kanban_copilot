@@ -10,7 +10,16 @@ The project is built phase-by-phase (see `docs/PLAN.md` and `docs/PHASE*.md`). E
 
 ## Architecture
 
-The runtime is a single FastAPI process. `backend/main.py` (one file, ~650 lines) holds everything: Pydantic models, SQLite access, the OpenRouter client, all `/api/*` routes, and static serving of the built frontend from `backend/static`.
+The runtime is a single FastAPI process, split into focused modules under `backend/`:
+
+- `main.py` — FastAPI app, lifespan (one-time DB init), all `/api/*` routes, and static serving of the built frontend from `backend/static`.
+- `config.py` — paths, constants, and env-derived settings (`OPENROUTER_*`, session/cookie config, demo credentials).
+- `models.py` — Pydantic request/response models.
+- `database.py` — SQLite connection, schema bootstrap, `DEFAULT_BOARD`, and user/board read/write.
+- `auth.py` — signed session-token helpers and the `get_current_username` dependency.
+- `ai.py` — OpenRouter client, structured-chat call, and `merge_ai_board_update`.
+
+`conftest.py` and Docker's `--app-dir /app/backend` both put `backend/` on `sys.path`, so these are imported as top-level modules (`import config`, `from main import app`).
 
 - **Static serving**: In Docker, the Next.js static export (`frontend/out`) is copied into `backend/static` and served at `/`. There is no separate frontend server in the MVP run path.
 - **Auth**: Backend-managed HTTP-only cookie `pm_session`. Credentials are hardcoded to `user` / `password`. Board APIs depend on `get_current_username` (reads the cookie) and reject unauthenticated requests.

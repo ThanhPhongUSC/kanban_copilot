@@ -151,7 +151,7 @@ export const AuthGate = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question,
-          history: nextHistory,
+          history: chatMessages,
         }),
       });
 
