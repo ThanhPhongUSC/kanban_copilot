@@ -1,7 +1,8 @@
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
-import { initialData } from "@/lib/kanban";
+import { initialData, type BoardData } from "@/lib/kanban";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
@@ -77,5 +78,49 @@ describe("KanbanBoard", () => {
 
     render(<KanbanBoard boardData={boardData} />);
     expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+  });
+
+  it("renders card metadata and triggers edit", async () => {
+    const boardData: BoardData = {
+      columns: [{ id: "col-a", title: "A", cardIds: ["card-rich"] }],
+      cards: {
+        "card-rich": {
+          id: "card-rich",
+          title: "Rich card",
+          details: "details",
+          priority: "high",
+          dueDate: "2026-07-01",
+          labels: ["design"],
+          assignee: "alice",
+        },
+      },
+    };
+    const onEditCard = vi.fn();
+    render(<KanbanBoard boardData={boardData} onEditCard={onEditCard} />);
+
+    expect(screen.getByText("high")).toBeInTheDocument();
+    expect(screen.getByText("design")).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /edit rich card/i }));
+    expect(onEditCard).toHaveBeenCalledWith("card-rich");
+  });
+
+  it("hides cards that do not match the active filter", () => {
+    const boardData: BoardData = {
+      columns: [{ id: "col-a", title: "A", cardIds: ["c1", "c2"] }],
+      cards: {
+        c1: { id: "c1", title: "Keep me", details: "", priority: "high" },
+        c2: { id: "c2", title: "Hide me", details: "", priority: "low" },
+      },
+    };
+    render(
+      <KanbanBoard
+        boardData={boardData}
+        filter={{ text: "", priority: "high", label: "", assignee: "" }}
+      />
+    );
+    expect(screen.getByText("Keep me")).toBeInTheDocument();
+    expect(screen.queryByText("Hide me")).toBeNull();
   });
 });

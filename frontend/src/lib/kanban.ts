@@ -1,7 +1,13 @@
+export type Priority = "low" | "medium" | "high";
+
 export type Card = {
   id: string;
   title: string;
   details: string;
+  priority?: Priority | null;
+  dueDate?: string | null;
+  labels?: string[];
+  assignee?: string | null;
 };
 
 export type Column = {
@@ -13,6 +19,66 @@ export type Column = {
 export type BoardData = {
   columns: Column[];
   cards: Record<string, Card>;
+};
+
+export type CardFilter = {
+  text: string;
+  priority: Priority | "all";
+  label: string;
+  assignee: string;
+};
+
+export const emptyFilter: CardFilter = {
+  text: "",
+  priority: "all",
+  label: "",
+  assignee: "",
+};
+
+export const isFilterActive = (filter: CardFilter): boolean =>
+  filter.text.trim() !== "" ||
+  filter.priority !== "all" ||
+  filter.label !== "" ||
+  filter.assignee !== "";
+
+export const cardMatchesFilter = (card: Card, filter: CardFilter): boolean => {
+  const text = filter.text.trim().toLowerCase();
+  if (text) {
+    const haystack = `${card.title} ${card.details}`.toLowerCase();
+    if (!haystack.includes(text)) {
+      return false;
+    }
+  }
+  if (filter.priority !== "all" && card.priority !== filter.priority) {
+    return false;
+  }
+  if (filter.label && !(card.labels ?? []).includes(filter.label)) {
+    return false;
+  }
+  if (filter.assignee && card.assignee !== filter.assignee) {
+    return false;
+  }
+  return true;
+};
+
+export const collectLabels = (cards: Record<string, Card>): string[] => {
+  const labels = new Set<string>();
+  for (const card of Object.values(cards)) {
+    for (const label of card.labels ?? []) {
+      labels.add(label);
+    }
+  }
+  return Array.from(labels).sort();
+};
+
+export const collectAssignees = (cards: Record<string, Card>): string[] => {
+  const assignees = new Set<string>();
+  for (const card of Object.values(cards)) {
+    if (card.assignee) {
+      assignees.add(card.assignee);
+    }
+  }
+  return Array.from(assignees).sort();
 };
 
 export const initialData: BoardData = {

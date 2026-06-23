@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This directory contains the current MVP frontend: a Next.js app that renders a single interactive kanban board.
+This directory contains the frontend: a Next.js app for a multi-user project management tool — accounts with self-registration, multiple Kanban boards per user, board sharing, rich cards, comments, an activity feed, and an AI sidebar (`Board Copilot`).
 
 ## Stack
 
@@ -17,36 +17,45 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 ## Current App Behavior
 
 - Route `/` renders `src/app/page.tsx`, which mounts `AuthGate`.
-- `AuthGate` checks backend session at `/api/auth/session`.
-- Unauthenticated users see a login form.
-- Authenticated users see the Kanban board and a logout action.
-- Authenticated board load uses `GET /api/board`.
-- Board changes are persisted via `PUT /api/board`.
-- Authenticated users see an AI sidebar chat (`Board Copilot`).
-- AI chat requests are sent via `POST /api/ai/chat`.
-- AI responses may include board updates that are applied immediately in UI.
-- The board has five columns by default.
-- Users can:
-  - Sign in with demo credentials (`user` / `password`).
-  - Log out.
-  - Rename columns inline.
-  - Add a card with title/details.
-  - Remove a card.
-  - Drag/drop cards within and across columns.
+- `AuthGate` is a thin session gate: it checks `/api/auth/session`, then renders
+  `AuthScreen` (unauthenticated) or `Workspace` (authenticated).
+- `AuthScreen` toggles between log in and self-registration.
+- `Workspace` is the authenticated hub: it loads the user's boards, owns the
+  selected board, persists board state, and wires the right-hand panel and the
+  card editor.
+- Users can: register/sign in (demo `user` / `password`), log out, create/rename/
+  delete boards and switch between them, rename columns, add/edit/delete cards
+  (with priority, due date, labels, assignee), comment on cards, filter cards,
+  share boards with other users, view an activity feed, and chat with the AI
+  copilot (which can update the active board).
+
+## API client
+
+- `src/lib/api.ts` is the single typed fetch client (`api.*`). It always sends
+  `credentials: "include"`, sets JSON content-type for bodied requests, and
+  throws `ApiError(status, detail)` on non-2xx. Components call `api.*`, not
+  `fetch`, directly.
 
 ## Source Map
 
 - `src/app/page.tsx`: Home route entrypoint.
-- `src/components/KanbanBoard.tsx`: Top-level board state and drag/drop orchestration.
-- `src/components/AuthGate.tsx`: Login/session gate and logout behavior.
-- `src/components/AuthGate.tsx`: Also owns board loading/saving state with backend API.
-- `src/components/AuthGate.tsx`: Also owns AI chat state and AI-driven board refresh behavior.
-- `src/components/AIChatSidebar.tsx`: Sidebar chat thread, input, loading, and error UI.
-- `src/components/KanbanColumn.tsx`: Column rendering, title editing, add-card entrypoint.
-- `src/components/KanbanCard.tsx`: Sortable card UI and delete action.
-- `src/components/NewCardForm.tsx`: Inline add-card form.
-- `src/components/KanbanCardPreview.tsx`: Drag overlay preview.
-- `src/lib/kanban.ts`: Types, initial board data, ID creation, and `moveCard` logic.
+- `src/components/AuthGate.tsx`: Session gate; selects `AuthScreen` vs `Workspace`.
+- `src/components/AuthScreen.tsx`: Login + register forms.
+- `src/components/Workspace.tsx`: Authenticated hub — board list/selection, board
+  load/save, members, activity, AI chat state, and card-editor orchestration.
+- `src/components/BoardSwitcher.tsx`: Board list dropdown with create/select/delete.
+- `src/components/KanbanBoard.tsx`: Board grid + drag/drop; applies the card filter.
+- `src/components/KanbanColumn.tsx` / `KanbanCard.tsx`: Column and card UI (card
+  renders metadata pills and edit/delete actions).
+- `src/components/CardEditor.tsx`: Modal for card fields and comments.
+- `src/components/FilterBar.tsx`: Text/priority/label/assignee filter controls.
+- `src/components/RightPanel.tsx`: Tabbed sidebar (Copilot / Members / Activity).
+- `src/components/AIChatSidebar.tsx`: Chat thread (embedded in `RightPanel`).
+- `src/components/MembersPanel.tsx` / `ActivityFeed.tsx`: Sharing and activity UI.
+- `src/components/NewCardForm.tsx` / `KanbanCardPreview.tsx`: Add-card form, drag preview.
+- `src/lib/api.ts`: Typed API client and response types.
+- `src/lib/kanban.ts`: Board/card types, filtering helpers, `moveCard`, ID creation.
+- `src/test/fetchMock.ts`: `installFetchMock` helper used by component tests.
 
 ## Styling
 
@@ -56,13 +65,21 @@ This directory contains the current MVP frontend: a Next.js app that renders a s
 
 ## Tests
 
-- Unit/component tests:
-  - `src/lib/kanban.test.ts` verifies `moveCard` logic.
-  - `src/components/AuthGate.test.tsx` verifies auth gate states, board fetch paths, and AI chat board-update application.
-  - `src/components/KanbanBoard.test.tsx` verifies render, rename, add/remove card flows.
+- Unit/component tests (Vitest + Testing Library), mocking the network with
+  `installFetchMock`:
+  - `src/lib/kanban.test.ts`: `moveCard` and filtering helpers.
+  - `src/lib/api.test.ts`: API client unwrapping and `ApiError` handling.
+  - `src/components/AuthGate.test.tsx` / `AuthScreen.test.tsx`: session gate and login/register.
+  - `src/components/Workspace.test.tsx`: integration over a stateful fake backend
+    (board load, create/switch/delete, rename, card edit, sharing, activity, AI update).
+  - Focused tests for `BoardSwitcher`, `CardEditor`, `FilterBar`, `MembersPanel`,
+    `ActivityFeed`, and `KanbanBoard` (metadata + filtering).
 - E2E tests:
-  - `tests/kanban.spec.ts` covers login, board load, card add, card drag, logout, persistence after reload, AI sidebar visibility, and mocked AI board update.
-  - `tests/container-webserver.mjs` starts/stops the Dockerized app for e2e execution and resets persisted DB state for deterministic runs.
+  - `tests/kanban.spec.ts` covers login, registration, multi-board create/switch,
+    card add/drag, card-metadata persistence, logout, column-rename persistence,
+    AI sidebar visibility, and mocked AI board update.
+  - `tests/container-webserver.mjs` starts/stops the Dockerized app and resets the
+    persisted DB for deterministic runs.
 
 ## NPM Scripts
 

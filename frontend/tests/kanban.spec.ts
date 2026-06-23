@@ -62,8 +62,56 @@ const login = async (page: Page) => {
 
 test("loads the kanban board", async ({ page }) => {
   await login(page);
-  await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
+  await expect(page.getByLabel("Board name")).toHaveValue("My Board");
   await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+});
+
+test("registers a new account and lands in an empty board", async ({ page }) => {
+  const username = `e2e-${Date.now()}`;
+  await page.goto("/");
+  await page.getByRole("button", { name: /sign up/i }).click();
+  await page.getByLabel("Username").fill(username);
+  await page.getByLabel("Password").fill("secret123");
+  await page.getByRole("button", { name: /create account/i }).click();
+
+  await expect(page.getByLabel("Board name")).toHaveValue("My Board");
+  // A fresh board starts with the three default columns and no cards.
+  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(3);
+});
+
+test("creates and switches between boards", async ({ page }) => {
+  await login(page);
+  const boardName = `Launch ${Date.now()}`;
+
+  await page.getByRole("button", { name: /my board/i }).click();
+  await page.getByLabel("New board name").fill(boardName);
+  await page.getByRole("button", { name: /create board/i }).click();
+
+  await expect(page.getByLabel("Board name")).toHaveValue(boardName);
+  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(3);
+
+  await page.getByRole("button", { name: new RegExp(boardName, "i") }).click();
+  await page.getByRole("option", { name: /my board/i }).click();
+  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+});
+
+test("edits card metadata and persists after reload", async ({ page }) => {
+  await login(page);
+  const card = page.getByTestId("card-card-2");
+  await card.hover();
+  await card.getByRole("button", { name: /edit gather customer signals/i }).click();
+
+  await page.getByLabel("Card priority").selectOption("high");
+  await page.getByLabel("Card labels").fill("urgent");
+  await page.getByRole("button", { name: /save changes/i }).click();
+
+  await expect(card.getByText("high")).toBeVisible();
+  await expect(card.getByText("urgent")).toBeVisible();
+
+  await page.reload();
+  const reloadedCard = page.getByTestId("card-card-2");
+  await expect(reloadedCard.getByText("high")).toBeVisible();
+  await expect(reloadedCard.getByText("urgent")).toBeVisible();
 });
 
 test("adds a card to a column", async ({ page }) => {
@@ -121,6 +169,17 @@ test("shows AI sidebar for authenticated users", async ({ page }) => {
   await login(page);
   await expect(page.getByTestId("ai-chat-sidebar")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Board Copilot" })).toBeVisible();
+});
+
+test("hides and reopens the assistant panel", async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId("ai-chat-sidebar")).toBeVisible();
+
+  await page.getByRole("button", { name: /hide assistant panel/i }).click();
+  await expect(page.getByTestId("ai-chat-sidebar")).toBeHidden();
+
+  await page.getByRole("button", { name: /open assistant panel/i }).click();
+  await expect(page.getByTestId("ai-chat-sidebar")).toBeVisible();
 });
 
 test("applies AI board update from sidebar chat", async ({ page }) => {

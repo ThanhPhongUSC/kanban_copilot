@@ -16,32 +16,30 @@ The service is split into focused top-level modules (imported via `--app-dir`/`c
 - `main.py`: FastAPI app, lifespan DB init, routes, and static serving.
 - `config.py`: paths, constants, env-derived settings, logger.
 - `models.py`: Pydantic request/response models.
-- `database.py`: SQLite connection, schema bootstrap, `DEFAULT_BOARD`, user/board read/write.
-- `auth.py`: signed session-token helpers and the `get_current_username` dependency.
+- `database.py`: SQLite connection, schema migration (`PRAGMA user_version`), `DEFAULT_BOARD`, and all user/board/member/comment/activity read/write helpers (each takes an open `sqlite3.Connection`).
+- `auth.py`: pbkdf2 password hashing (`hash_password`/`verify_password`), signed session-token helpers, and the `get_current_username` dependency.
 - `ai.py`: OpenRouter client, structured-chat call, and `merge_ai_board_update`.
 
 ## Current Status
 
 - Routes (all in `main.py`):
 	- `/api/health`
-	- `/api/auth/login`
-	- `/api/auth/logout`
-	- `/api/auth/session`
-	- `/api/board` (GET)
-	- `/api/board` (PUT)
-	- `/api/ai/smoke` (GET)
-	- `/api/ai/chat` (POST)
+	- `/api/auth/register` (POST) — self-registration; creates the user, a default board, and a session.
+	- `/api/auth/login`, `/api/auth/logout`, `/api/auth/session`
+	- `/api/boards` (GET list, POST create)
+	- `/api/boards/{id}` (GET, PUT save state, PATCH rename, DELETE — owner only)
+	- `/api/boards/{id}/members` (GET, POST add — owner only), `/api/boards/{id}/members/{username}` (DELETE — owner only)
+	- `/api/boards/{id}/comments` (GET by `cardId`, POST add)
+	- `/api/boards/{id}/activity` (GET)
+	- `/api/ai/smoke` (GET), `/api/ai/chat` (POST, takes `boardId`)
 	- static frontend serving at `/`
-- Auth uses a backend-managed HTTP-only cookie (`pm_session`).
-- MVP credentials are hardcoded to `user` / `password`.
-- SQLite database is auto-created if missing.
-- Users and boards are persisted in SQLite.
-- Board state is stored as JSON plus a version field.
-- AI smoke call uses OpenRouter model `openai/gpt-oss-120b:free`.
-- AI smoke requires `OPENROUTER_API_KEY` in runtime environment.
-- AI chat sends board JSON, user question, and conversation history to model.
-- AI chat requires structured JSON response with assistant text and optional `board_update`.
-- When `board_update` is returned, backend validates and persists it.
+- Auth uses a backend-managed HTTP-only cookie (`pm_session`). Passwords are stored as pbkdf2-sha256 hashes with a per-user salt.
+- Multiple users; self-registration is open. The demo account `user` / `password` is seeded with a populated `My Board`.
+- Each board has an owner and zero or more `editor` members (`board_members`). `_require_access` in `main.py` resolves a board the caller owns or is a member of (404 when not visible, 403 for owner-only actions).
+- Board state is stored as a JSON blob per board plus an integer `version`. Cards carry optional `priority`, `dueDate`, `labels`, and `assignee` fields (backward compatible).
+- Comments (`card_comments`) and an activity log (`activity`) are relational tables scoped to a board.
+- `init_db()` checks `PRAGMA user_version` and migrates a legacy single-board database (old `boards.user_id UNIQUE`, password-less users) forward to v1 in place.
+- AI chat operates on the board named by `boardId`, validating/persisting any `board_update`. Requires `OPENROUTER_API_KEY`.
 - In Docker runtime, `backend/static` is populated from the exported Next.js build.
 
 ## Session and Configuration

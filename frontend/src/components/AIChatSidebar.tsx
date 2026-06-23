@@ -43,7 +43,7 @@ export const AIChatSidebar = ({
   };
 
   return (
-    <aside className="fixed bottom-4 right-4 top-20 z-40 flex w-[340px] flex-col rounded-3xl border border-[var(--stroke)] bg-white/95 p-4 shadow-[0_20px_40px_rgba(3,33,71,0.14)] backdrop-blur lg:w-[360px]" data-testid="ai-chat-sidebar">
+    <div className="flex min-h-0 flex-1 flex-col" data-testid="ai-chat-sidebar">
       <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--secondary-purple)] text-white">
@@ -110,6 +110,6 @@ export const AIChatSidebar = ({
           {isSubmitting ? "Thinking..." : "Send"}
         </button>
       </form>
-    </aside>
+    </div>
   );
 };

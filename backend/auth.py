@@ -1,10 +1,30 @@
 import hashlib
 import hmac
+import secrets
 
 from fastapi import Cookie, HTTPException
 
 from config import SESSION_SECRET
 from database import get_user_id, open_connection
+
+
+PBKDF2_ITERATIONS = 200_000
+
+
+def hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
+    if salt is None:
+        salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), bytes.fromhex(salt), PBKDF2_ITERATIONS
+    ).hex()
+    return digest, salt
+
+
+def verify_password(password: str, password_hash: str, salt: str) -> bool:
+    if not password_hash or not salt:
+        return False
+    candidate, _ = hash_password(password, salt)
+    return hmac.compare_digest(candidate, password_hash)
 
 
 def _sign_username(username: str) -> str:
