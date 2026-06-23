@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { SendIcon, SparkleIcon } from "@/components/icons";
 
 type AIChatMessage = {
   role: "user" | "assistant";
@@ -44,13 +45,20 @@ export const AIChatSidebar = ({
   return (
     <aside className="fixed bottom-4 right-4 top-20 z-40 flex w-[340px] flex-col rounded-3xl border border-[var(--stroke)] bg-white/95 p-4 shadow-[0_20px_40px_rgba(3,33,71,0.14)] backdrop-blur lg:w-[360px]" data-testid="ai-chat-sidebar">
       <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
-          AI Assistant
-        </p>
-        <h2 className="mt-2 font-display text-xl font-semibold text-[var(--navy-dark)]">
-          Board Copilot
-        </h2>
-        <p className="mt-2 text-xs leading-5 text-[var(--gray-text)]">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--secondary-purple)] text-white">
+            <SparkleIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
+              AI Assistant
+            </p>
+            <h2 className="font-display text-xl font-semibold text-[var(--navy-dark)]">
+              Board Copilot
+            </h2>
+          </div>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-[var(--gray-text)]">
           Ask for planning help. The assistant can reply and optionally update the board.
         </p>
       </div>
@@ -96,8 +104,9 @@ export const AIChatSidebar = ({
           type="submit"
           disabled={isSubmitting}
           data-testid="ai-chat-send"
-          className="w-full rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:brightness-110 disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:brightness-110 disabled:opacity-60"
         >
+          <SendIcon className="h-4 w-4" />
           {isSubmitting ? "Thinking..." : "Send"}
         </button>
       </form>

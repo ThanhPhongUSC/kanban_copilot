@@ -45,6 +45,26 @@ describe("KanbanBoard", () => {
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
   });
 
+  it("cancels the add-card form with the cancel icon button", async () => {
+    render(<KanbanBoard />);
+    const column = getFirstColumn();
+    await userEvent.click(
+      within(column).getByRole("button", { name: /add a card/i })
+    );
+
+    const titleInput = within(column).getByPlaceholderText(/card title/i);
+    expect(titleInput).toBeInTheDocument();
+
+    await userEvent.click(within(column).getByRole("button", { name: /cancel/i }));
+
+    expect(
+      within(column).queryByPlaceholderText(/card title/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(column).getByRole("button", { name: /add a card/i })
+    ).toBeInTheDocument();
+  });
+
   it("renders safely when card references are stale", () => {
     const boardData = {
       ...initialData,

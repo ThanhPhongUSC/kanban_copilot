@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { CheckIcon, CloseIcon, PlusIcon } from "@/components/icons";
 
 const initialFormState = { title: "", details: "" };
 
@@ -45,8 +46,9 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              className="rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
             >
+              <CheckIcon className="h-3.5 w-3.5" />
               Add card
             </button>
             <button
@@ -55,9 +57,11 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
                 setIsOpen(false);
                 setFormState(initialFormState);
               }}
-              className="rounded-full border border-[var(--stroke)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
+              aria-label="Cancel"
+              title="Cancel"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--stroke)] text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
             >
-              Cancel
+              <CloseIcon className="h-4 w-4" />
             </button>
           </div>
         </form>
@@ -65,8 +69,9 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-full rounded-full border border-dashed border-[var(--stroke)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary-blue)] transition hover:border-[var(--primary-blue)]"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-[var(--stroke)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary-blue)] transition hover:border-[var(--primary-blue)] hover:bg-[rgba(32,157,215,0.06)]"
         >
+          <PlusIcon className="h-4 w-4" />
           Add a card
         </button>
       )}

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { LogoutIcon } from "@/components/icons";
 import type { BoardData } from "@/lib/kanban";
 
 type AuthState = "loading" | "authenticated" | "unauthenticated";
@@ -292,8 +293,9 @@ export const AuthGate = () => {
       <button
         type="button"
         onClick={handleLogout}
-        className="fixed right-6 top-6 z-50 rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--navy-dark)] shadow-[var(--shadow)] backdrop-blur transition hover:border-[var(--primary-blue)]"
+        className="fixed right-6 top-6 z-50 inline-flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--navy-dark)] shadow-[var(--shadow)] backdrop-blur transition hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]"
       >
+        <LogoutIcon className="h-4 w-4" />
         Log out
       </button>
       <div className="lg:pr-[380px]">
